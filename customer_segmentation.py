@@ -14,8 +14,9 @@ pd.set_option("display.width", None)
 # ---------------------------------------------------------------------------
 # Step 1 / Question 2a: data preparation and choice of k
 # ---------------------------------------------------------------------------
-print("=" * 70)
-print("QUESTION 2a: DATA PREPARATION AND CHOICE OF K")
+# Prepare the features (drop the ID, standardize), then compare WCSS and
+# silhouette across several values of k to choose how many clusters to use
+
 print("=" * 70)
 
 df = pd.read_csv("data/customers.csv")
@@ -77,3 +78,55 @@ plt.savefig("elbow_method.png")
 
 K = 3  # elbow at k=3; chosen segments are also easy to interpret
 print(f"Chosen number of clusters: k = {K}")
+
+# ---------------------------------------------------------------------------
+# Step 2 / Question 2b: K-means clustering
+# ---------------------------------------------------------------------------
+# Group the customers with K-means using the chosen k, then summarize each
+# cluster in the original units (the helper is reused by later sections)
+
+def summarize_clusters(customers, labels):
+    """Print the size and average raw features of each cluster (noise = -1)."""
+    summary_rows = []
+    for cluster_label in sorted(set(labels)):
+        members = customers[labels == cluster_label]
+        summary_rows.append(
+            [
+                "Noise" if cluster_label == -1 else f"Cluster {cluster_label}",
+                len(members),
+                ", ".join(members["Customer ID"]),
+                round(members["Age"].mean(), 1),
+                round(members["Annual Spending ($)"].mean(), 1),
+                round(members["Purchases per Month"].mean(), 1),
+            ]
+        )
+    print(
+        tabulate(
+            summary_rows,
+            headers=["Group", "Size", "Customers", "Avg age", "Avg spending ($)", "Avg purchases/month"],
+            tablefmt="fancy_grid",
+        )
+    )
+
+
+print("=" * 70)
+print("QUESTION 2b: K-MEANS CLUSTERING")
+print("=" * 70)
+
+kmeans = KMeans(n_clusters=K, random_state=42, n_init=10)  # fixed seed for reproducible results
+kmeans_labels = kmeans.fit_predict(X_scaled)
+
+print(f"Iterations until the centroids stopped moving: {kmeans.n_iter_}")
+print(f"WCSS: {kmeans.inertia_:.3f}")
+summarize_clusters(df, kmeans_labels)
+
+plt.figure(figsize=(6, 4))
+plt.scatter(df["Annual Spending ($)"], df["Purchases per Month"], c=kmeans_labels)
+for row_index, customer_id in enumerate(df["Customer ID"]):
+    plt.annotate(customer_id, (df["Annual Spending ($)"][row_index], df["Purchases per Month"][row_index]))
+plt.xlabel("Annual Spending ($)")
+plt.ylabel("Purchases per Month")
+plt.title(f"K-means clusters (k = {K})")
+plt.tight_layout()
+plt.savefig("kmeans_clusters.png")
+# plt.show()
