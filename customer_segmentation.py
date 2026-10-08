@@ -3,7 +3,8 @@ import matplotlib
 matplotlib.use("Agg")  # save plots to file instead of opening a window
 import matplotlib.pyplot as plt
 import pandas as pd
-from sklearn.cluster import KMeans
+from scipy.cluster.hierarchy import dendrogram, fcluster, linkage
+from sklearn.cluster import DBSCAN, KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
 from tabulate import tabulate
@@ -130,3 +131,41 @@ plt.title(f"K-means clusters (k = {K})")
 plt.tight_layout()
 plt.savefig("kmeans_clusters.png")
 # plt.show()
+
+# ---------------------------------------------------------------------------
+# Step 3 / Question 2c: hierarchical clustering and DBSCAN
+# ---------------------------------------------------------------------------
+# Hierarchical: merge the closest groups step by step, then cut the tree into k
+# clusters. DBSCAN: grow clusters from dense areas; isolated points become noise
+print("=" * 70)
+print("QUESTION 2c: HIERARCHICAL CLUSTERING AND DBSCAN")
+print("=" * 70)
+
+print("Hierarchical clustering (Ward linkage, cut into k clusters)")
+merge_tree = linkage(X_scaled, method="ward")
+# renumber so cluster labels start at 0 in order of first appearance
+hierarchical_labels = pd.factorize(fcluster(merge_tree, t=K, criterion="maxclust"))[0]
+summarize_clusters(df, hierarchical_labels)
+
+plt.figure(figsize=(7, 4))
+dendrogram(merge_tree, labels=df["Customer ID"].tolist())
+plt.ylabel("Merge distance (Ward)")
+plt.title("Hierarchical clustering dendrogram")
+plt.tight_layout()
+plt.savefig("dendrogram.png")
+# plt.show()
+
+print("DBSCAN (eps = 0.8, min_samples = 3)")
+dbscan_labels = DBSCAN(eps=0.8, min_samples=3).fit_predict(X_scaled)
+summarize_clusters(df, dbscan_labels)
+
+print("Side-by-side comparison of the three methods")
+comparison = pd.DataFrame(
+    {
+        "Customer": df["Customer ID"],
+        "K-means": kmeans_labels,
+        "Hierarchical": hierarchical_labels,
+        "DBSCAN": pd.Series(dbscan_labels).replace(-1, "noise"),
+    }
+)
+print(tabulate(comparison, headers="keys", tablefmt="fancy_grid", showindex=False))
