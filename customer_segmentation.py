@@ -169,3 +169,31 @@ comparison = pd.DataFrame(
     }
 )
 print(tabulate(comparison, headers="keys", tablefmt="fancy_grid", showindex=False))
+
+# ---------------------------------------------------------------------------
+# Step 4 / Question 3b: silhouette scores for all three methods
+# ---------------------------------------------------------------------------
+# Score every clustering on the same scaled data. DBSCAN is scored twice because
+# noise points belong to no cluster: once without them, once as one extra group
+def silhouette_row(method_name, features, labels):
+    return [method_name, len(set(labels)), len(labels), round(silhouette_score(features, labels), 3)]
+
+
+print("=" * 70)
+print("QUESTION 3b: SILHOUETTE SCORES")
+print("=" * 70)
+
+is_clustered = dbscan_labels != -1
+score_rows = [
+    silhouette_row(f"K-means (k = {K})", X_scaled, kmeans_labels),
+    silhouette_row(f"Hierarchical (Ward, k = {K})", X_scaled, hierarchical_labels),
+    silhouette_row("DBSCAN, noise excluded", X_scaled[is_clustered], dbscan_labels[is_clustered]),
+    silhouette_row("DBSCAN, noise as own group", X_scaled, dbscan_labels),
+]
+print(
+    tabulate(
+        score_rows,
+        headers=["Method", "Groups", "Customers scored", "Silhouette"],
+        tablefmt="fancy_grid",
+    )
+)
