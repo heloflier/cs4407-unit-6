@@ -19,6 +19,8 @@ pd.set_option("display.width", None)
 # silhouette across several values of k to choose how many clusters to use
 
 print("=" * 70)
+print("QUESTION 2a: DATA PREPARATION and CHOICE OF K")
+print("=" * 70)
 
 df = pd.read_csv("data/customers.csv")
 feature_names = ["Age", "Annual Spending ($)", "Purchases per Month"]
